@@ -1,0 +1,1 @@
+com.joni.kjs_bc.BulkCreationKubeJSPlugin
