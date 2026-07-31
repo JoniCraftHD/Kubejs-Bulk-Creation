@@ -30,12 +30,12 @@ public class JsonAssetGenerator {
                 BulkBuilderLogic.Preset preset = BulkBuilderLogic.getPresets().get(presetId);
 
                 if (preset != null && "block".equalsIgnoreCase(preset.type())) {
-                    String blockId = creation.id() + "_" + presetId.toLowerCase().replace("ore_", "");
+                    String blockId = creation.id() + preset.idSuffix();
 
                     String baseTex = preset.baseTexture().isEmpty() ? "minecraft:block/stone" : preset.baseTexture();
                     String overlayTex = (!preset.overlays().isEmpty()) ? preset.overlays().get(0) : "kubejs:block/ore_overlay";
 
-                    // Gebackene Partikel-Textur erzeugen (Base + getöntes Overlay, fest verschmolzen)
+
                     String particleTexId = "kubejs:block/particle/" + blockId + "_particle";
                     File particleFile = new File(particleTexturesDir, blockId + "_particle.png");
                     TextureGenerator.generateCompositeTexture(baseTex, overlayTex, creation.tintColor(), particleFile);
@@ -43,10 +43,10 @@ public class JsonAssetGenerator {
                     // 1. Blockstate-JSON
                     writeJson(new File(blockstatesDir, blockId + ".json"), createBlockstateJson(blockId));
 
-                    // 2. 3D-Block-Model-JSON (particle zeigt jetzt auf die gebackene Textur!)
+
                     writeJson(new File(blockModelsDir, blockId + ".json"), createBlockModelJson(baseTex, overlayTex, particleTexId));
 
-                    // 3. 3D-Block-Item Model (erbt direkt vom 3D Block-Model)
+
                     writeJson(new File(itemModelsDir, blockId + ".json"), createBlockItemModelJson(blockId));
                 }
             }
@@ -71,7 +71,6 @@ public class JsonAssetGenerator {
         root.addProperty("render_type", "minecraft:cutout");
 
         JsonObject textures = new JsonObject();
-        // Partikel nutzen jetzt die gebackene, statische Composite-Textur
         textures.addProperty("particle", particleTexture);
         textures.addProperty("base", baseTexture);
         textures.addProperty("bloom", overlayTexture);
@@ -79,17 +78,16 @@ public class JsonAssetGenerator {
 
         JsonArray elements = new JsonArray();
 
-        // Layer 1: Stein-Untergrund, kein Tint (tintindex -1 -> wird weggelassen)
+
         elements.add(createCubeElement("#base", -1));
 
-        // Layer 2: Erz-Overlay, tintindex 1 (nicht 0!) damit Partikel-Tinting nicht mehr greift
+
         elements.add(createCubeElement("#bloom", 1));
 
         root.add("elements", elements);
         return root;
     }
 
-    // Zeigt im Inventar als 3D-Würfel an
     private static JsonObject createBlockItemModelJson(String blockId) {
         JsonObject root = new JsonObject();
         root.addProperty("parent", "kubejs:block/" + blockId);

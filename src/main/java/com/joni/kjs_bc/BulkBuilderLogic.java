@@ -20,7 +20,12 @@ public class BulkBuilderLogic {
         private String dropPresetId = null;
         private String soundType = "stone";
 
-        // Block Optionen
+        // Namens-Konfiguration
+        private String namePrefix = "";
+        private String nameSuffix = "";
+        private String idSuffix = "";
+
+        // Block & Item Optionen
         private float hardness = 3.0f;
         private float resistance = 3.0f;
         private int lightLevel = 0;
@@ -28,8 +33,6 @@ public class BulkBuilderLogic {
         private boolean opaque = true;
         private boolean fullBlock = true;
         private boolean requiresTool = true;
-
-        // Item Optionen
         private int maxStackSize = 64;
         private String rarity = "common";
 
@@ -40,6 +43,7 @@ public class BulkBuilderLogic {
 
         public PresetBuilder(String id) {
             this.id = id;
+            this.idSuffix = "_" + id.toLowerCase();
         }
 
         public PresetBuilder presetType(String type) { this.presetType = type; return this; }
@@ -49,7 +53,11 @@ public class BulkBuilderLogic {
         public PresetBuilder dropsPreset(String presetId) { this.dropPresetId = presetId; return this; }
         public PresetBuilder soundType(String sound) { this.soundType = sound; return this; }
 
-        // Neue Eigenschaften
+
+        public PresetBuilder namePrefix(String prefix) { this.namePrefix = prefix; return this; }
+        public PresetBuilder nameSuffix(String suffix) { this.nameSuffix = suffix; return this; }
+        public PresetBuilder idSuffix(String suffix) { this.idSuffix = suffix; return this; }
+
         public PresetBuilder hardness(float hardness) { this.hardness = hardness; return this; }
         public PresetBuilder resistance(float resistance) { this.resistance = resistance; return this; }
         public PresetBuilder lightLevel(int light) { this.lightLevel = light; return this; }
@@ -68,6 +76,7 @@ public class BulkBuilderLogic {
         public void build() {
             PRESETS.put(id, new Preset(
                     id, presetType, baseTexture, overlays, noItem, dropPresetId, soundType,
+                    namePrefix, nameSuffix, idSuffix,
                     hardness, resistance, lightLevel, hasGravity, opaque, fullBlock, requiresTool,
                     maxStackSize, rarity, blockTags, itemTags, bothTags
             ));
@@ -83,7 +92,7 @@ public class BulkBuilderLogic {
         private final String id;
         private String displayName;
         private String tintColor = "#FFFFFF";
-        private String formula = null;
+        private Object tooltip = null; // Neu: tooltip statt formula
         private final List<String> presetIds = new ArrayList<>();
 
         public BulkCreationBuilder(String id) {
@@ -92,24 +101,27 @@ public class BulkBuilderLogic {
         }
 
         public BulkCreationBuilder displayName(String name) { this.displayName = name; return this; }
-        public BulkCreationBuilder formula(String formula) { this.formula = formula; return this; }
+        public BulkCreationBuilder tooltip(Object tooltip) {
+            this.tooltip = tooltip;
+            return this;
+        }
+
         public BulkCreationBuilder presets(String... presets) { this.presetIds.addAll(Arrays.asList(presets)); return this; }
         public BulkCreationBuilder tintOverlay(String hexColor) { this.tintColor = hexColor; return this; }
 
         public void build() {
-            CREATIONS.add(new BulkCreation(id, displayName, tintColor, formula, presetIds));
+            CREATIONS.add(new BulkCreation(id, displayName, tintColor, tooltip, presetIds));
         }
     }
 
-    // Records
     public record Preset(
             String id, String type, String baseTexture, List<String> overlays, boolean noItem, String dropPresetId, String soundType,
+            String namePrefix, String nameSuffix, String idSuffix,
             float hardness, float resistance, int lightLevel, boolean hasGravity, boolean opaque, boolean fullBlock, boolean requiresTool,
             int maxStackSize, String rarity, List<String> blockTags, List<String> itemTags, List<String> bothTags
     ) {}
 
-    public record BulkCreation(String id, String displayName, String tintColor, String formula, List<String> presetIds) {}
-
+    public record BulkCreation(String id, String displayName, String tintColor, Object tooltip, List<String> presetIds) {}
     public static Map<String, Preset> getPresets() { return PRESETS; }
     public static List<BulkCreation> getCreations() { return CREATIONS; }
 }

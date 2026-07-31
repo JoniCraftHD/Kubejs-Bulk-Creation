@@ -8,11 +8,7 @@ import java.io.InputStream;
 
 public class TextureGenerator {
 
-    /**
-     * Lädt eine Textur-Ressource wie "minecraft:block/stone" oder "kubejs:block/ore_overlay".
-     * Versucht zuerst den Classloader (Vanilla/gejarte Mod-Texturen),
-     * fällt danach auf lose Dateien unter kubejs/assets/... zurück.
-     */
+
     private static BufferedImage loadTexture(String resourceId) throws IOException {
         String[] split = resourceId.split(":", 2);
         String namespace = split.length > 1 ? split[0] : "minecraft";
@@ -20,7 +16,7 @@ public class TextureGenerator {
 
         String resourcePath = "assets/" + namespace + "/textures/" + path + ".png";
 
-        // 1. Versuch: über den Classloader (funktioniert für Vanilla + gejarte Mods)
+
         InputStream stream = Thread.currentThread()
                 .getContextClassLoader()
                 .getResourceAsStream(resourcePath);
@@ -35,7 +31,7 @@ public class TextureGenerator {
             if (img != null) return img;
         }
 
-        // 2. Fallback: lose Datei direkt im Dateisystem unter kubejs/assets/...
+
         File looseFile = new File("kubejs/assets/" + namespace + "/textures/" + path + ".png");
         if (looseFile.exists()) {
             BufferedImage img = ImageIO.read(looseFile);
@@ -46,9 +42,8 @@ public class TextureGenerator {
                 + " (auch geprüft: " + looseFile.getPath() + ")");
     }
 
-    /**
-     * Tönt eine Overlay-Textur mit einer Hex-Farbe (z.B. "#667DEA"), behält Alpha bei.
-     */
+
+
     private static BufferedImage tintImage(BufferedImage overlay, String hexColor) {
         int color = Integer.parseInt(hexColor.replace("#", ""), 16);
         int rTint = (color >> 16) & 0xFF;
@@ -78,9 +73,7 @@ public class TextureGenerator {
         return result;
     }
 
-    /**
-     * Legt das Overlay (bereits getönt) über die Basis-Textur (Alpha-Composite).
-     */
+
     private static BufferedImage compositeImages(BufferedImage base, BufferedImage overlay) {
         int width = base.getWidth();
         int height = base.getHeight();
@@ -94,10 +87,7 @@ public class TextureGenerator {
         return result;
     }
 
-    /**
-     * Generiert eine fertig zusammengesetzte, getönte Partikel/Block-Textur
-     * und speichert sie als PNG-Datei.
-     */
+
     public static void generateCompositeTexture(String baseTextureId, String overlayTextureId,
                                                 String hexColor, File outputFile) {
         try {
