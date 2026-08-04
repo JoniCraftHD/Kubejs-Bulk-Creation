@@ -8,6 +8,13 @@ public class BulkBuilderLogic {
     private static final Map<String, Bundle> BUNDLES = new HashMap<>();
     private static final List<BulkCreation> CREATIONS = new ArrayList<>();
 
+    public enum TintTarget {
+        BASE,
+        OVERLAY,
+        BOTH,
+        NONE
+    }
+
     // ==========================================
     // PRESETS
     // ==========================================
@@ -24,6 +31,7 @@ public class BulkBuilderLogic {
         private boolean noItem = false;
         private String dropPresetId = null;
         private String soundType = "stone";
+        private TintTarget tintTarget = TintTarget.OVERLAY;
 
         // Naming
         private String namePrefix = "";
@@ -42,7 +50,7 @@ public class BulkBuilderLogic {
         private String rarity = "common";
 
         // Fluid-specific options
-        private String flowingTexture = null; // Default handled in build()
+        private String flowingTexture = null;
         private int luminosity = 0;
 
         // Tags
@@ -58,35 +66,141 @@ public class BulkBuilderLogic {
             this.idSuffix = "_" + id.toLowerCase();
         }
 
-        public PresetBuilder presetType(String type) { this.presetType = type; return this; }
-        public PresetBuilder texture(String texture) { this.baseTexture = texture; return this; }
-        public PresetBuilder overlay(String overlayPath) { this.overlays.add(overlayPath); return this; }
-        public PresetBuilder noItem() { this.noItem = true; return this; }
-        public PresetBuilder dropsPreset(String presetId) { this.dropPresetId = presetId; return this; }
-        public PresetBuilder soundType(String sound) { this.soundType = sound; return this; }
+        public PresetBuilder presetType(String type) {
+            this.presetType = type;
+            return this;
+        }
 
-        public PresetBuilder namePrefix(String prefix) { this.namePrefix = prefix; return this; }
-        public PresetBuilder nameSuffix(String suffix) { this.nameSuffix = suffix; return this; }
-        public PresetBuilder idSuffix(String suffix) { this.idSuffix = suffix; return this; }
+        public PresetBuilder texture(String texture) {
+            this.baseTexture = texture;
+            return this;
+        }
 
-        public PresetBuilder hardness(float hardness) { this.hardness = hardness; return this; }
-        public PresetBuilder resistance(float resistance) { this.resistance = resistance; return this; }
-        public PresetBuilder lightLevel(int light) { this.lightLevel = light; return this; }
-        public PresetBuilder hasGravity(boolean gravity) { this.hasGravity = gravity; return this; }
-        public PresetBuilder opaque(boolean opaque) { this.opaque = opaque; return this; }
-        public PresetBuilder fullBlock(boolean fullBlock) { this.fullBlock = fullBlock; return this; }
-        public PresetBuilder requiresTool(boolean requiresTool) { this.requiresTool = requiresTool; return this; }
+        public PresetBuilder overlay(String overlayPath) {
+            this.overlays.add(overlayPath);
+            return this;
+        }
 
-        public PresetBuilder maxStackSize(int size) { this.maxStackSize = size; return this; }
-        public PresetBuilder rarity(String rarity) { this.rarity = rarity; return this; }
+        public PresetBuilder noItem() {
+            this.noItem = true;
+            return this;
+        }
 
-        public PresetBuilder tagBlock(String tag) { this.blockTags.add(tag); return this; }
-        public PresetBuilder tagItem(String tag) { this.itemTags.add(tag); return this; }
-        public PresetBuilder tagBoth(String tag) { this.bothTags.add(tag); return this; }
+        public PresetBuilder dropsPreset(String presetId) {
+            this.dropPresetId = presetId;
+            return this;
+        }
 
-        // Fluid setters
-        public PresetBuilder flowingTexture(String texture) { this.flowingTexture = texture; return this; }
-        public PresetBuilder luminosity(int luminosity) { this.luminosity = luminosity; return this; }
+        public PresetBuilder soundType(String sound) {
+            this.soundType = sound;
+            return this;
+        }
+
+        // Tint options
+        public PresetBuilder tintBase() {
+            this.tintTarget = TintTarget.BASE;
+            return this;
+        }
+
+        public PresetBuilder tintOverlay() {
+            this.tintTarget = TintTarget.OVERLAY;
+            return this;
+        }
+
+        public PresetBuilder tintBoth() {
+            this.tintTarget = TintTarget.BOTH;
+            return this;
+        }
+
+        public PresetBuilder tintNone() {
+            this.tintTarget = TintTarget.NONE;
+            return this;
+        }
+
+        public PresetBuilder namePrefix(String prefix) {
+            this.namePrefix = prefix;
+            return this;
+        }
+
+        public PresetBuilder nameSuffix(String suffix) {
+            this.nameSuffix = suffix;
+            return this;
+        }
+
+        public PresetBuilder idSuffix(String suffix) {
+            this.idSuffix = suffix;
+            return this;
+        }
+
+        public PresetBuilder hardness(float hardness) {
+            this.hardness = hardness;
+            return this;
+        }
+
+        public PresetBuilder resistance(float resistance) {
+            this.resistance = resistance;
+            return this;
+        }
+
+        public PresetBuilder lightLevel(int light) {
+            this.lightLevel = light;
+            return this;
+        }
+
+        public PresetBuilder hasGravity(boolean gravity) {
+            this.hasGravity = gravity;
+            return this;
+        }
+
+        public PresetBuilder opaque(boolean opaque) {
+            this.opaque = opaque;
+            return this;
+        }
+
+        public PresetBuilder fullBlock(boolean fullBlock) {
+            this.fullBlock = fullBlock;
+            return this;
+        }
+
+        public PresetBuilder requiresTool(boolean requiresTool) {
+            this.requiresTool = requiresTool;
+            return this;
+        }
+
+        public PresetBuilder maxStackSize(int size) {
+            this.maxStackSize = size;
+            return this;
+        }
+
+        public PresetBuilder rarity(String rarity) {
+            this.rarity = rarity;
+            return this;
+        }
+
+        public PresetBuilder tagBlock(String tag) {
+            this.blockTags.add(tag);
+            return this;
+        }
+
+        public PresetBuilder tagItem(String tag) {
+            this.itemTags.add(tag);
+            return this;
+        }
+
+        public PresetBuilder tagBoth(String tag) {
+            this.bothTags.add(tag);
+            return this;
+        }
+
+        public PresetBuilder flowingTexture(String texture) {
+            this.flowingTexture = texture;
+            return this;
+        }
+
+        public PresetBuilder luminosity(int luminosity) {
+            this.luminosity = luminosity;
+            return this;
+        }
 
         public PresetBuilder dependsOn(String... presetIds) {
             this.dependsOn.addAll(Arrays.asList(presetIds));
@@ -94,13 +208,12 @@ public class BulkBuilderLogic {
         }
 
         public void build() {
-            // Default flowingTexture to baseTexture if not specified
             String finalFlow = (flowingTexture != null && !flowingTexture.isEmpty())
                     ? flowingTexture
                     : baseTexture;
 
             PRESETS.put(id, new Preset(
-                    id, presetType, baseTexture, overlays, noItem, dropPresetId, soundType,
+                    id, presetType, baseTexture, overlays, noItem, dropPresetId, soundType, tintTarget,
                     namePrefix, nameSuffix, idSuffix,
                     hardness, resistance, lightLevel, hasGravity, opaque, fullBlock, requiresTool,
                     maxStackSize, rarity, blockTags, itemTags, bothTags,
@@ -154,24 +267,50 @@ public class BulkBuilderLogic {
         private Object tooltip = null;
         private final List<String> presetIds = new ArrayList<>();
         private String overlayOverride = null;
+        private String dropsOverride = null;
 
         public BulkCreationBuilder(String id) {
             this.id = id;
             this.displayName = id;
         }
 
-        public BulkCreationBuilder displayName(String name) { this.displayName = name; return this; }
-        public BulkCreationBuilder tooltip(Object tooltip) { this.tooltip = tooltip; return this; }
-        public BulkCreationBuilder presets(String... presets) { this.presetIds.addAll(Arrays.asList(presets)); return this; }
-        public BulkCreationBuilder tintOverlay(String hexColor) { this.tintColor = hexColor; return this; }
+        public BulkCreationBuilder displayName(String name) {
+            this.displayName = name;
+            return this;
+        }
+
+        public BulkCreationBuilder tooltip(Object tooltip) {
+            this.tooltip = tooltip;
+            return this;
+        }
+
+        public BulkCreationBuilder presets(String... presets) {
+            this.presetIds.addAll(Arrays.asList(presets));
+            return this;
+        }
+
+        public BulkCreationBuilder tintOverlay(String hexColor) {
+            this.tintColor = hexColor;
+            return this;
+        }
 
         public BulkCreationBuilder addOverlayAllBlocks(String overlayTexture) {
             this.overlayOverride = overlayTexture;
             return this;
         }
 
+        public BulkCreationBuilder dropsOverride(String dropsPresetId) {
+            this.dropsOverride = dropsPresetId;
+            return this;
+        }
+
+        public BulkCreationBuilder dropTarget(String dropsPresetId) {
+            this.dropsOverride = dropsPresetId;
+            return this;
+        }
+
         public void build() {
-            CREATIONS.add(new BulkCreation(id, displayName, tintColor, tooltip, presetIds, overlayOverride));
+            CREATIONS.add(new BulkCreation(id, displayName, tintColor, tooltip, presetIds, overlayOverride, dropsOverride));
         }
     }
 
@@ -180,7 +319,7 @@ public class BulkBuilderLogic {
     // ==========================================
 
     public record Preset(
-            String id, String type, String baseTexture, List<String> overlays, boolean noItem, String dropPresetId, String soundType,
+            String id, String type, String baseTexture, List<String> overlays, boolean noItem, String dropPresetId, String soundType, TintTarget tintTarget,
             String namePrefix, String nameSuffix, String idSuffix,
             float hardness, float resistance, int lightLevel, boolean hasGravity, boolean opaque, boolean fullBlock, boolean requiresTool,
             int maxStackSize, String rarity, List<String> blockTags, List<String> itemTags, List<String> bothTags,
@@ -188,9 +327,8 @@ public class BulkBuilderLogic {
     ) {}
 
     public record BulkCreation(
-            String id, String displayName, String tintColor, Object tooltip, List<String> presetIds, String overlayOverride
+            String id, String displayName, String tintColor, Object tooltip, List<String> presetIds, String overlayOverride, String dropsOverride
     ) {
-        // Parses "#667DEA" -> 0x667DEA integer for KubeJS fluid tinting
         public int tintColorInt() {
             try {
                 String hex = tintColor.replace("#", "");
@@ -244,7 +382,12 @@ public class BulkBuilderLogic {
     }
 
     public static List<String> getResolvedPresetIds(BulkCreation creation) {
-        return resolvePresetIds(creation.presetIds());
+        List<String> raw = new ArrayList<>(creation.presetIds());
+
+        if (creation.dropsOverride() != null && !creation.dropsOverride().isEmpty()) {
+            raw.add(creation.dropsOverride());
+        }
+        return resolvePresetIds(raw);
     }
 
     public static Map<String, Preset> getPresets() { return PRESETS; }

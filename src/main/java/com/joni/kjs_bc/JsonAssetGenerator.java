@@ -19,49 +19,41 @@ public class JsonAssetGenerator {
         File blockstatesDir = new File(baseDir, "blockstates");
         File blockModelsDir = new File(baseDir, "models/block");
         File itemModelsDir = new File(baseDir, "models/item");
-        File particleTexturesDir = new File(baseDir, "textures/block/particle");
 
         blockstatesDir.mkdirs();
         blockModelsDir.mkdirs();
         itemModelsDir.mkdirs();
-        particleTexturesDir.mkdirs();
 
         for (BulkBuilderLogic.BulkCreation creation : BulkBuilderLogic.getCreations()) {
-            // Expand bundles + dependencies into the real preset list for this creation
             List<String> resolvedPresetIds = BulkBuilderLogic.getResolvedPresetIds(creation);
 
             for (String presetId : resolvedPresetIds) {
                 BulkBuilderLogic.Preset preset = BulkBuilderLogic.getPresets().get(presetId);
 
-                if (preset != null && "block".equalsIgnoreCase(preset.type())) {
-                    String blockId = creation.id() + preset.idSuffix();
+                if (preset != null) {
+                    String fullId = creation.id() + preset.idSuffix();
 
-                    String baseTex = preset.baseTexture().isEmpty() ? "minecraft:block/stone" : preset.baseTexture();
+                    // --- BLOCK MODEL GENERATION ---
+                    if ("block".equalsIgnoreCase(preset.type())) {
+                        String baseTex = preset.baseTexture().isEmpty() ? "minecraft:block/stone" : preset.baseTexture();
+                        String overlayTex = (creation.overlayOverride() != null && !creation.overlayOverride().isEmpty())
+                                ? creation.overlayOverride()
+                                : (!preset.overlays().isEmpty() ? preset.overlays().get(0) : "kubejs:block/ore_overlay");
 
-                    // If the creation defines an overlay override, it wins over the preset's own overlay.
-                    // This lets you reuse the same block preset (e.g. different base rock types) across
-                    // many materials while still swapping the overlay art per-creation if needed.
-                    String overlayTex;
-                    if (creation.overlayOverride() != null && !creation.overlayOverride().isEmpty()) {
-                        overlayTex = creation.overlayOverride();
-                    } else if (!preset.overlays().isEmpty()) {
-                        overlayTex = preset.overlays().get(0);
-                    } else {
-                        overlayTex = "kubejs:block/ore_overlay";
+                        writeJson(new File(blockstatesDir, fullId + ".json"), createBlockstateJson(fullId));
+                        writeJson(new File(blockModelsDir, fullId + ".json"), createBlockModelJson(baseTex, overlayTex, baseTex));
+                        writeJson(new File(itemModelsDir, fullId + ".json"), createBlockItemModelJson(fullId));
                     }
 
-                    // Baked particle texture (base + tinted overlay, pre-composited)
-                    String particleTexId = "kubejs:block/particle/" + blockId + "_particle";
-                    File particleFile = new File(particleTexturesDir, blockId + "_particle.png");
-                    TextureGenerator.generateCompositeTexture(baseTex, overlayTex, creation.tintColor(), particleFile);
-
-                    writeJson(new File(blockstatesDir, blockId + ".json"), createBlockstateJson(blockId));
-                    writeJson(new File(blockModelsDir, blockId + ".json"), createBlockModelJson(baseTex, overlayTex, particleTexId));
-                    writeJson(new File(itemModelsDir, blockId + ".json"), createBlockItemModelJson(blockId));
+                    // --- ITEM MODEL GENERATION (Multi-Layer / Overlays) ---
+                    else if ("item".equalsIgnoreCase(preset.type())) {
+                        if (!preset.overlays().isEmpty()) {
+                            // Creates model with layer0 (base) and layer1 (overlay)
+                            writeJson(new File(itemModelsDir, fullId + ".json"),
+                                    createLayeredItemModelJson(preset.baseTexture(), preset.overlays().get(0)));
+                        }
+                    }
                 }
-
-                // Note: fluid presets don't need generated block/item models here -
-                // fluid still/flowing textures are referenced directly in the fluid registry script.
             }
         }
     }
@@ -70,11 +62,9 @@ public class JsonAssetGenerator {
         JsonObject root = new JsonObject();
         JsonObject variants = new JsonObject();
         JsonObject defaultVariant = new JsonObject();
-
         defaultVariant.addProperty("model", "kubejs:block/" + blockId);
         variants.add("", defaultVariant);
         root.add("variants", variants);
-
         return root;
     }
 
@@ -90,7 +80,7 @@ public class JsonAssetGenerator {
         root.add("textures", textures);
 
         JsonArray elements = new JsonArray();
-        elements.add(createCubeElement("#base", -1));
+        elements.add(createCubeElement("#base", 0));
         elements.add(createCubeElement("#bloom", 1));
         root.add("elements", elements);
         return root;
@@ -102,31 +92,32 @@ public class JsonAssetGenerator {
         return root;
     }
 
+    // Generates item/generated model with layer0 and layer1 for items with overlays
+    private static JsonObject createLayeredItemModelJson(String baseTexture, String overlayTexture) {
+        JsonObject root = new JsonObject();
+        root.addProperty("parent", "minecraft:item/generated");
+
+        JsonObject textures = new JsonObject();
+        textures.addProperty("layer0", baseTexture);
+        textures.addProperty("layer1", overlayTexture);
+        root.add("textures", textures);
+
+        return root;
+    }
+
     private static JsonObject createCubeElement(String textureKey, int tintIndex) {
         JsonObject element = new JsonObject();
-
-        JsonArray from = new JsonArray();
-        from.add(0); from.add(0); from.add(0);
-        element.add("from", from);
-
-        JsonArray to = new JsonArray();
-        to.add(16); to.add(16); to.add(16);
-        element.add("to", to);
+        JsonArray from = new JsonArray(); from.add(0); from.add(0); from.add(0); element.add("from", from);
+        JsonArray to = new JsonArray(); to.add(16); to.add(16); to.add(16); element.add("to", to);
 
         JsonObject faces = new JsonObject();
-        String[] directions = {"down", "up", "north", "south", "west", "east"};
-
-        for (String dir : directions) {
+        for (String dir : new String[]{"down", "up", "north", "south", "west", "east"}) {
             JsonObject face = new JsonObject();
             face.addProperty("texture", textureKey);
             face.addProperty("cullface", dir);
-
-            if (tintIndex >= 0) {
-                face.addProperty("tintindex", tintIndex);
-            }
+            if (tintIndex >= 0) face.addProperty("tintindex", tintIndex);
             faces.add(dir, face);
         }
-
         element.add("faces", faces);
         return element;
     }
