@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 
 public class JsonAssetGenerator {
 
@@ -26,29 +27,41 @@ public class JsonAssetGenerator {
         particleTexturesDir.mkdirs();
 
         for (BulkBuilderLogic.BulkCreation creation : BulkBuilderLogic.getCreations()) {
-            for (String presetId : creation.presetIds()) {
+            // Expand bundles + dependencies into the real preset list for this creation
+            List<String> resolvedPresetIds = BulkBuilderLogic.getResolvedPresetIds(creation);
+
+            for (String presetId : resolvedPresetIds) {
                 BulkBuilderLogic.Preset preset = BulkBuilderLogic.getPresets().get(presetId);
 
                 if (preset != null && "block".equalsIgnoreCase(preset.type())) {
                     String blockId = creation.id() + preset.idSuffix();
 
                     String baseTex = preset.baseTexture().isEmpty() ? "minecraft:block/stone" : preset.baseTexture();
-                    String overlayTex = (!preset.overlays().isEmpty()) ? preset.overlays().get(0) : "kubejs:block/ore_overlay";
 
+                    // If the creation defines an overlay override, it wins over the preset's own overlay.
+                    // This lets you reuse the same block preset (e.g. different base rock types) across
+                    // many materials while still swapping the overlay art per-creation if needed.
+                    String overlayTex;
+                    if (creation.overlayOverride() != null && !creation.overlayOverride().isEmpty()) {
+                        overlayTex = creation.overlayOverride();
+                    } else if (!preset.overlays().isEmpty()) {
+                        overlayTex = preset.overlays().get(0);
+                    } else {
+                        overlayTex = "kubejs:block/ore_overlay";
+                    }
 
+                    // Baked particle texture (base + tinted overlay, pre-composited)
                     String particleTexId = "kubejs:block/particle/" + blockId + "_particle";
                     File particleFile = new File(particleTexturesDir, blockId + "_particle.png");
                     TextureGenerator.generateCompositeTexture(baseTex, overlayTex, creation.tintColor(), particleFile);
 
-                    // 1. Blockstate-JSON
                     writeJson(new File(blockstatesDir, blockId + ".json"), createBlockstateJson(blockId));
-
-
                     writeJson(new File(blockModelsDir, blockId + ".json"), createBlockModelJson(baseTex, overlayTex, particleTexId));
-
-
                     writeJson(new File(itemModelsDir, blockId + ".json"), createBlockItemModelJson(blockId));
                 }
+
+                // Note: fluid presets don't need generated block/item models here -
+                // fluid still/flowing textures are referenced directly in the fluid registry script.
             }
         }
     }
@@ -77,13 +90,8 @@ public class JsonAssetGenerator {
         root.add("textures", textures);
 
         JsonArray elements = new JsonArray();
-
-
         elements.add(createCubeElement("#base", -1));
-
-
         elements.add(createCubeElement("#bloom", 1));
-
         root.add("elements", elements);
         return root;
     }
